@@ -1,6 +1,6 @@
 # FLSUN_RemoteScreen
 
-View and control the **FLSun T1 Pro** touchscreen from any web browser on a phone, tablet or computer. This is the same kind of remote screen that the Snapmaker U1 Extended Firmware and Zmod for Flashforge printers offer.
+View and control the **FLSun T1 Pro** touchscreen from any web browser on a phone, tablet or computer. This is the same kind of remote screen that the Snapmaker U1 Extended Firmware offers.
 
 Open `http://<printer-ip>/screen/` to see the printer's screen live. Click or tap to press its buttons, and drag to swipe or scroll.
 
@@ -105,6 +105,5 @@ The system fixes (clock service, certificate links, git) stay, because they help
 ## Credits
 
 - [Snapmaker U1 Extended Firmware](https://github.com/paxx12/SnapmakerU1-Extended-Firmware) and the `fb-http` app from [paxx12/screen-apps](https://github.com/paxx12/screen-apps), which this design follows
-- [Zmod](https://github.com/ghzserg/zmod) for Flashforge printers, for the idea
 
 Licensed under GPLv3.
