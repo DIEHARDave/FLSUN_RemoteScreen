@@ -6,7 +6,9 @@ set -e
 CONFIG_DIR="${HOME}/printer_data/config"
 MOONRAKER_CONF="${CONFIG_DIR}/moonraker.conf"
 ASVC="${HOME}/printer_data/moonraker.asvc"
-SERVICE="flsun-remote-screen"
+SERVICE="flsun_remote_screen"
+# The service's name before v0.2.0.
+OLD_SERVICE="flsun-remote-screen"
 SNIPPET="/etc/nginx/snippets/flsun-remote-screen.conf"
 REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
@@ -15,8 +17,10 @@ msg() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 [ "$(id -u)" -ne 0 ] || { echo "run as the pi user, not root" >&2; exit 1; }
 
 msg "Removing the screen service"
-sudo systemctl disable --now "${SERVICE}.service" > /dev/null 2>&1 || true
-sudo rm -f "/etc/systemd/system/${SERVICE}.service"
+for svc in "$SERVICE" "$OLD_SERVICE"; do
+    sudo systemctl disable --now "${svc}.service" > /dev/null 2>&1 || true
+    sudo rm -f "/etc/systemd/system/${svc}.service"
+done
 sudo systemctl daemon-reload
 
 msg "Removing /screen/ from the web server"
@@ -36,7 +40,7 @@ msg "Removing the Moonraker settings"
 sed -i '/^\[include flsun_remote_screen\.conf\]/d' "$MOONRAKER_CONF"
 rm -f "${CONFIG_DIR}/flsun_remote_screen.conf" "${CONFIG_DIR}/flsun_remote_screen.env"
 if [ -f "$ASVC" ]; then
-    sed -i "/^${SERVICE}\$/d" "$ASVC"
+    sed -i -e "/^${SERVICE}\$/d" -e "/^${OLD_SERVICE}\$/d" "$ASVC"
 fi
 
 # The flsun-timesync boot service from install.sh is left in place on

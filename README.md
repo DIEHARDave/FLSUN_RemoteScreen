@@ -39,6 +39,8 @@ SSH into the printer as `pi` (the default password is `1`).
 
 The installer runs the system fixes again and installs a boot service that keeps the clock right, so the fixes are in place whichever FLSun plugin you install first. It restarts Moonraker but not Klipper, so it's safe to run during a print. Run it again after a FLSun firmware update that resets the web server.
 
+**Updating from v0.1.x:** run `~/FLSUN_RemoteScreen/install.sh` once after updating. v0.2.0 renames the service from `flsun-remote-screen` to `flsun_remote_screen`, because FLSun's Moonraker only restarts a service named like its update manager entry. Until you do, the update manager can't restart the remote screen after an update.
+
 ## Use
 
 Open `http://<printer-ip>/screen/` in a browser. The dot in the top-right corner is green while the page is connected; the button next to it switches to full screen.
@@ -57,7 +59,7 @@ The installer always lists Screen after your camera, so FLSUN_Timelapse keeps re
 
 ## Settings
 
-Options are in `~/printer_data/config/flsun_remote_screen.env`. The installer creates this file once and never overwrites it. After editing it, run `sudo systemctl restart flsun-remote-screen`.
+Options are in `~/printer_data/config/flsun_remote_screen.env`. The installer creates this file once and never overwrites it. After editing it, run `sudo systemctl restart flsun_remote_screen`.
 
 | Option | Default | Meaning |
 |---|---|---|
@@ -73,13 +75,13 @@ If you recalibrate HelixScreen's touch, the remote screen picks up the new calib
 
 | File | Change |
 |---|---|
-| `/etc/systemd/system/flsun-remote-screen.service` | New service. It runs `server/remote_screen.py` as `pi`, with the `video` and `input` groups so it can read the screen and send touches |
+| `/etc/systemd/system/flsun_remote_screen.service` | New service. It runs `server/remote_screen.py` as `pi`, with the `video` and `input` groups so it can read the screen and send touches |
 | `/etc/nginx/snippets/flsun-remote-screen.conf` | New file: the `/screen/` web paths |
 | `/etc/nginx/sites-available/mainsail` | Adds one `include` line for the snippet (a backup is saved first) |
 | `~/printer_data/config/flsun_remote_screen.conf` | New file: update manager entry |
 | `~/printer_data/config/flsun_remote_screen.env` | New file: options |
 | `~/printer_data/config/moonraker.conf` | Adds `[include flsun_remote_screen.conf]` (a backup is saved first) |
-| `~/printer_data/moonraker.asvc` | Adds `flsun-remote-screen`, so the update manager can restart it |
+| `~/printer_data/moonraker.asvc` | Adds `flsun_remote_screen`, so the update manager can restart it |
 | Moonraker webcams | Adds the **Screen** webcam (`/screen/snapshot`), listed after your camera; skipped with `--no-webcam` |
 | System clock | Sets it now, and adds `flsun-timesync.service` (`/usr/local/bin/flsun-timesync`), which sets it at every boot, saves it to `/etc/lasttime` and restarts ntpd. FLSun's `/etc/monitor` restores the date from that file at each boot but, because of a bug, never updates it, so without this fix the clock returns to the same old date after every boot |
 | `/etc/ssl/certs` | Rebuilds the missing certificate links (`update-ca-certificates`) |

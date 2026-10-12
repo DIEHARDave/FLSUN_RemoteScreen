@@ -12,7 +12,8 @@ REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CONFIG_DIR="${HOME}/printer_data/config"
 MOONRAKER_CONF="${CONFIG_DIR}/moonraker.conf"
 ASVC="${HOME}/printer_data/moonraker.asvc"
-SERVICE="flsun-remote-screen"
+SERVICE="flsun_remote_screen"
+OLD_SERVICE="flsun-remote-screen"
 SNIPPET="/etc/nginx/snippets/flsun-remote-screen.conf"
 
 msg() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
@@ -45,6 +46,20 @@ sudo install -m 755 "${REPO_DIR}/system/flsun-timesync" /usr/local/bin/flsun-tim
 sudo install -m 644 "${REPO_DIR}/system/flsun-timesync.service" /etc/systemd/system/flsun-timesync.service
 sudo systemctl daemon-reload
 sudo systemctl enable flsun-timesync.service > /dev/null 2>&1
+
+# Before v0.2.0 the service was flsun-remote-screen. FLSun's Moonraker only
+# restarts a service named like its update manager section, so it was
+# renamed.
+if [ -f "/etc/systemd/system/${OLD_SERVICE}.service" ]; then
+    msg "Renaming the ${OLD_SERVICE} service to ${SERVICE}"
+    sudo systemctl disable --now "${OLD_SERVICE}.service" > /dev/null 2>&1 || true
+    sudo rm -f "/etc/systemd/system/${OLD_SERVICE}.service"
+fi
+[ -f "$ASVC" ] && sed -i "/^${OLD_SERVICE}\$/d" "$ASVC"
+if [ -f "${CONFIG_DIR}/flsun_remote_screen.conf" ]; then
+    sed -i "s/^managed_services: ${OLD_SERVICE}\$/managed_services: ${SERVICE}/" \
+        "${CONFIG_DIR}/flsun_remote_screen.conf"
+fi
 
 msg "Installing the screen service"
 chmod 755 "${REPO_DIR}/server/remote_screen.py" "${REPO_DIR}/server/screen_webcam.py"
