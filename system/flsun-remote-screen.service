@@ -1,0 +1,18 @@
+[Unit]
+Description=FLSUN_RemoteScreen - browser view and control of the touchscreen
+After=rc-local.service network.target
+
+[Service]
+Type=simple
+User=pi
+# video: read /dev/fb0. input: write touch events to /dev/input/event1.
+SupplementaryGroups=video input
+EnvironmentFile=-/home/pi/printer_data/config/flsun_remote_screen.env
+ExecStart=/usr/bin/python3 /home/pi/FLSUN_RemoteScreen/server/remote_screen.py $REMOTE_SCREEN_ARGS
+Restart=always
+RestartSec=5
+# Stay out of Klipper's way on the single slow CPU.
+Nice=10
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,14 @@
+{
+  "name": "FLSun T1 Pro Screen",
+  "short_name": "T1 Screen",
+  "description": "View and control the FLSun T1 Pro touchscreen",
+  "start_url": "./",
+  "scope": "./",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#111111",
+  "theme_color": "#111111",
+  "icons": [
+    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

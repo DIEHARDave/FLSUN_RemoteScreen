@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="T1 Screen">
+<meta name="theme-color" content="#111111">
+<title>T1 Pro Screen</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="apple-touch-icon" href="icon.svg">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+html, body { width: 100%; height: 100%; background: #111; overflow: hidden;
+  font: 13px system-ui, sans-serif; color: #ccc; }
+#wrap { position: fixed; inset: 0; display: flex; align-items: center; justify-content: center; }
+#screen { display: block; image-rendering: auto; touch-action: none; cursor: pointer;
+  box-shadow: 0 0 0 1px #333; user-select: none; -webkit-user-select: none; }
+#bar { position: fixed; top: 8px; right: 8px; display: flex; gap: 6px; align-items: center;
+  opacity: .35; transition: opacity .2s; }
+#bar:hover, #bar:focus-within { opacity: 1; }
+#dot { width: 9px; height: 9px; border-radius: 50%; background: #888; }
+#dot.ok { background: #3c3; }
+#dot.err { background: #d33; }
+button { background: #222; color: #ddd; border: 1px solid #444; border-radius: 4px;
+  padding: 4px 8px; font: inherit; cursor: pointer; }
+#msg { position: fixed; bottom: 10px; left: 0; right: 0; text-align: center; pointer-events: none; }
+</style>
+</head>
+<body>
+<div id="wrap"><canvas id="screen" width="480" height="272" aria-label="Printer screen"></canvas></div>
+<div id="bar">
+  <span id="dot" title="Connecting"></span>
+  <button id="fs" type="button" title="Full screen">&#x26F6;</button>
+</div>
+<div id="msg"></div>
+<script src="auth.js"></script>
+<script>
+'use strict';
+const canvas = document.getElementById('screen');
+const ctx = canvas.getContext('2d');
+const dot = document.getElementById('dot');
+const msg = document.getElementById('msg');
+let etag = null;
+let failures = 0;
+
+function fit() {
+  const s = Math.min(window.innerWidth / canvas.width, window.innerHeight / canvas.height);
+  canvas.style.width = Math.floor(canvas.width * s) + 'px';
+  canvas.style.height = Math.floor(canvas.height * s) + 'px';
+}
+window.addEventListener('resize', fit);
+
+function status(ok, text) {
+  dot.className = ok ? 'ok' : 'err';
+  dot.title = ok ? 'Connected' : (text || 'Disconnected');
+  msg.textContent = ok ? '' : (text || '');
+}
+
+async function draw(blob) {
+  const img = await createImageBitmap(blob);
+  if (canvas.width !== img.width || canvas.height !== img.height) {
+    canvas.width = img.width;
+    canvas.height = img.height;
+    fit();
+  }
+  ctx.drawImage(img, 0, 0);
+  img.close && img.close();
+}
+
+// Long poll: the server holds the request until the screen changes.
+async function loop() {
+  for (;;) {
+    if (document.hidden) { await new Promise(r => setTimeout(r, 500)); continue; }
+    const headers = authHeaders();
+    if (etag) headers['If-None-Match'] = etag;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 20000);
+    try {
+      const r = await fetch('snapshot?wait=10', { headers, cache: 'no-store', signal: ctrl.signal });
+      if (r.status === 401) { status(false, 'Log in to Mainsail or Fluidd first'); await sleep(3000); continue; }
+      if (r.status === 200) {
+        etag = r.headers.get('ETag');
+        await draw(await r.blob());
+      } else if (r.status !== 304) {
+        throw new Error('HTTP ' + r.status);
+      }
+      failures = 0;
+      status(true);
+    } catch (e) {
+      failures++;
+      status(false, 'Reconnecting…');
+      await sleep(Math.min(500 * failures, 5000));
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Touch: pointer events mapped to framebuffer pixels.
+let down = false, lastMove = 0, pending = null;
+function point(e) {
+  const r = canvas.getBoundingClientRect();
+  return {
+    x: Math.round((e.clientX - r.left) * canvas.width / r.width),
+    y: Math.round((e.clientY - r.top) * canvas.height / r.height),
+  };
+}
+let queue = Promise.resolve();
+function send(a, p) {
+  const q = 'touch?a=' + a + (p ? '&x=' + p.x + '&y=' + p.y : '');
+  // Serialize so down/move/up reach the printer in order.
+  queue = queue.then(() => fetch(q, { method: 'POST', headers: authHeaders() })
+    .then(r => { if (r.status === 503) status(false, 'Touch is unavailable (view only)'); })
+    .catch(() => {}));
+}
+canvas.addEventListener('pointerdown', e => {
+  e.preventDefault();
+  canvas.setPointerCapture(e.pointerId);
+  down = true;
+  send('down', point(e));
+});
+canvas.addEventListener('pointermove', e => {
+  if (!down) return;
+  pending = point(e);
+  const now = performance.now();
+  if (now - lastMove > 33) { lastMove = now; send('move', pending); pending = null; }
+});
+function release(e) {
+  if (!down) return;
+  down = false;
+  if (pending) { send('move', pending); pending = null; }
+  send('up');
+}
+canvas.addEventListener('pointerup', release);
+canvas.addEventListener('pointercancel', release);
+canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+document.getElementById('fs').addEventListener('click', () => {
+  if (document.fullscreenElement) document.exitFullscreen();
+  else document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
+});
+
+ctx.fillStyle = '#000';
+ctx.fillRect(0, 0, canvas.width, canvas.height);
+fit();
+loop();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
