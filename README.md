@@ -19,22 +19,24 @@ It needs nothing beyond what's already on the printer, and it sends a new image 
 
 SSH into the printer as `pi` (the default password is `1`).
 
-If git can't reach GitHub, the system needs FLSun's image fixes first. They are the same ones [FLSUN_Timelapse](https://github.com/DIEHARDave/FLSUN_Timelapse) makes; skip this step if you already installed that plugin:
+1. Prepare the system. FLSun's system image can't reach GitHub as shipped: the clock starts about a year and a half in the past, the certificate links are missing, and git's https support was removed. These commands fix all three (skip them if [FLSUN_Timelapse](https://github.com/DIEHARDave/FLSUN_Timelapse) is already installed; it makes the same fixes):
 
-```sh
-sudo ntpdate -u -b time.google.com
-curl -fsSL --cacert /etc/ssl/certs/ca-certificates.crt https://raw.githubusercontent.com/DIEHARDave/FLSUN_Timelapse/main/prepare.sh | bash
-```
+   ```sh
+   sudo ntpdate -u -b time.google.com
+   curl -fsSL --cacert /etc/ssl/certs/ca-certificates.crt https://raw.githubusercontent.com/DIEHARDave/FLSUN_RemoteScreen/main/prepare.sh | bash
+   ```
 
-Then download and install:
+   Don't use `timedatectl set-ntp true`: on this image it stops the time service rather than starting it.
 
-```sh
-cd ~
-git clone https://github.com/DIEHARDave/FLSUN_RemoteScreen.git
-~/FLSUN_RemoteScreen/install.sh
-```
+2. Download and install:
 
-The installer restarts Moonraker but not Klipper, so it's safe to run during a print. Run it again after a FLSun firmware update that resets the web server.
+   ```sh
+   cd ~
+   git clone https://github.com/DIEHARDave/FLSUN_RemoteScreen.git
+   ~/FLSUN_RemoteScreen/install.sh
+   ```
+
+The installer runs the system fixes again and installs a boot service that keeps the clock right, so the fixes are in place whichever FLSun plugin you install first. It restarts Moonraker but not Klipper, so it's safe to run during a print. Run it again after a FLSun firmware update that resets the web server.
 
 ## Use
 
@@ -77,6 +79,11 @@ If you recalibrate HelixScreen's touch, the remote screen picks up the new calib
 | `~/printer_data/config/flsun_remote_screen.env` | New file: options |
 | `~/printer_data/config/moonraker.conf` | Adds `[include flsun_remote_screen.conf]` (a backup is saved first) |
 | `~/printer_data/moonraker.asvc` | Adds `flsun-remote-screen`, so the update manager can restart it |
+| System clock | Sets it now, and adds `flsun-timesync.service` (`/usr/local/bin/flsun-timesync`), which sets it at every boot, saves it to `/etc/lasttime` and restarts ntpd. FLSun's `/etc/monitor` restores the date from that file at each boot but, because of a bug, never updates it, so without this fix the clock returns to the same old date after every boot |
+| `/etc/ssl/certs` | Rebuilds the missing certificate links (`update-ca-certificates`) |
+| git | Reinstalls Debian's git package (2.20.1-2+deb10u9) to restore the https support FLSun deleted |
+
+FLSUN_Timelapse makes the same three system fixes with the same files, so installing both plugins, in either order, is safe.
 
 ## How it works
 
@@ -92,6 +99,8 @@ If you recalibrate HelixScreen's touch, the remote screen picks up the new calib
 ~/FLSUN_RemoteScreen/uninstall.sh
 rm -rf ~/FLSUN_RemoteScreen
 ```
+
+The system fixes (clock service, certificate links, git) stay, because they help the rest of the printer too, and FLSUN_Timelapse relies on them.
 
 ## Credits
 

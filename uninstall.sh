@@ -39,6 +39,10 @@ if [ -f "$ASVC" ]; then
     sed -i "/^${SERVICE}\$/d" "$ASVC"
 fi
 
+# The flsun-timesync boot service from install.sh is left in place on
+# purpose: a correct clock helps everything else on the printer too, and
+# FLSUN_Timelapse uses the same service.
+
 msg "Restarting Moonraker"
 sudo systemctl restart moonraker
 

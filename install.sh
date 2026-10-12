@@ -37,6 +37,16 @@ command -v python3 > /dev/null || die "python3 not found"
 [ -f "$MOONRAKER_CONF" ] || die "$MOONRAKER_CONF not found"
 [ -d /etc/nginx/sites-enabled ] || die "nginx not found"
 
+# Clock, certificates and git https support, shared with FLSUN_Timelapse;
+# see prepare.sh.
+"${REPO_DIR}/prepare.sh"
+
+msg "Installing the boot service that sets the clock"
+sudo install -m 755 "${REPO_DIR}/system/flsun-timesync" /usr/local/bin/flsun-timesync
+sudo install -m 644 "${REPO_DIR}/system/flsun-timesync.service" /etc/systemd/system/flsun-timesync.service
+sudo systemctl daemon-reload
+sudo systemctl enable flsun-timesync.service > /dev/null 2>&1
+
 msg "Installing the screen service"
 chmod 755 "${REPO_DIR}/server/remote_screen.py"
 if [ ! -f "${CONFIG_DIR}/flsun_remote_screen.env" ]; then
