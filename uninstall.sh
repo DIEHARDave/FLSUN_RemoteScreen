@@ -8,7 +8,7 @@ MOONRAKER_CONF="${CONFIG_DIR}/moonraker.conf"
 ASVC="${HOME}/printer_data/moonraker.asvc"
 SERVICE="flsun-remote-screen"
 SNIPPET="/etc/nginx/snippets/flsun-remote-screen.conf"
-MOONRAKER_URL="http://127.0.0.1:7125"
+REPO_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 msg() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 
@@ -29,8 +29,8 @@ done
 sudo rm -f "$SNIPPET"
 sudo nginx -t > /dev/null 2>&1 && sudo systemctl reload nginx
 
-msg "Removing the webcam entry, if any"
-curl -s -m 5 -X DELETE "${MOONRAKER_URL}/server/webcams/item?name=Screen" > /dev/null 2>&1 || true
+msg "Removing the Screen webcam, if any"
+python3 "${REPO_DIR}/server/screen_webcam.py" remove || true
 
 msg "Removing the Moonraker settings"
 sed -i '/^\[include flsun_remote_screen\.conf\]/d' "$MOONRAKER_CONF"

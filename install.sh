@@ -2,8 +2,8 @@
 # FLSUN_RemoteScreen installer for the FLSun T1 Pro.
 # Run as the pi user from the cloned repo: ~/FLSUN_RemoteScreen/install.sh
 # Options:
-#   --webcam   also add the screen to Mainsail/Fluidd as a webcam (view only;
-#              see the README before using it with FLSUN_Timelapse)
+#   --no-webcam   don't add the "Screen" webcam to Mainsail's and Fluidd's
+#                 dashboard
 # Safe to re-run, e.g. after a FLSun firmware update.
 
 set -e
@@ -14,16 +14,15 @@ MOONRAKER_CONF="${CONFIG_DIR}/moonraker.conf"
 ASVC="${HOME}/printer_data/moonraker.asvc"
 SERVICE="flsun-remote-screen"
 SNIPPET="/etc/nginx/snippets/flsun-remote-screen.conf"
-MOONRAKER_URL="http://127.0.0.1:7125"
 
 msg() { printf '\033[1;32m==>\033[0m %s\n' "$*"; }
 warn() { printf '\033[1;33mWARNING:\033[0m %s\n' "$*"; }
 die() { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 
-ADD_WEBCAM=0
+ADD_WEBCAM=1
 for arg in "$@"; do
     case "$arg" in
-        --webcam) ADD_WEBCAM=1 ;;
+        --no-webcam) ADD_WEBCAM=0 ;;
         *) die "unknown option: $arg" ;;
     esac
 done
@@ -48,7 +47,7 @@ sudo systemctl daemon-reload
 sudo systemctl enable flsun-timesync.service > /dev/null 2>&1
 
 msg "Installing the screen service"
-chmod 755 "${REPO_DIR}/server/remote_screen.py"
+chmod 755 "${REPO_DIR}/server/remote_screen.py" "${REPO_DIR}/server/screen_webcam.py"
 if [ ! -f "${CONFIG_DIR}/flsun_remote_screen.env" ]; then
     cp "${REPO_DIR}/config/flsun_remote_screen.env" "${CONFIG_DIR}/flsun_remote_screen.env"
 fi
@@ -99,22 +98,10 @@ msg "Restarting Moonraker"
 sudo systemctl restart moonraker
 
 if [ "$ADD_WEBCAM" = 1 ]; then
-    msg "Adding the screen as a webcam named Screen"
-    for _ in $(seq 30); do
-        curl -s -m 2 "${MOONRAKER_URL}/server/info" > /dev/null && break
-        sleep 1
-    done
-    if curl -s -m 5 "${MOONRAKER_URL}/server/webcams/list" | grep -q '"name": *"Screen"'; then
-        msg "Webcam Screen already exists"
-    else
-        curl -s -m 10 -X POST "${MOONRAKER_URL}/server/webcams/item?name=Screen&service=mjpegstreamer-adaptive&stream_url=/screen/stream&snapshot_url=/screen/snapshot&aspect_ratio=16:9&target_fps=4&target_fps_idle=1" \
-            > /dev/null || warn "could not add the webcam"
-    fi
-    if [ -f "${CONFIG_DIR}/flsun_timelapse.conf" ] \
-        && ! grep -q '^camera:' "${CONFIG_DIR}/flsun_timelapse.conf"; then
-        warn "FLSUN_Timelapse records the first webcam. Add 'camera: Webcam' under"
-        warn "[timelapse] in flsun_timelapse.conf so it never records the screen."
-    fi
+    # A second webcam, listed after the camera so timelapses and HelixScreen
+    # keep using the camera; see server/screen_webcam.py.
+    msg "Adding the Screen webcam to the dashboard"
+    python3 "${REPO_DIR}/server/screen_webcam.py" add || warn "could not add the Screen webcam"
 fi
 
 sleep 1

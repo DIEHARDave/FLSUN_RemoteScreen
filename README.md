@@ -7,6 +7,7 @@ Open `http://<printer-ip>/screen/` to see the printer's screen live. Click or ta
 ## What it does
 
 - Mirrors the 480×272 screen and refreshes as soon as anything on it changes.
+- Shows the screen as a second webcam in the Mainsail and Fluidd dashboard.
 - Turns clicks, taps and drags into real touches on the printer's screen.
 - Works with HelixScreen and with FLSun's stock screen. Each one calibrates the touch panel differently, so the plugin follows whichever screen is running.
 - Uses the same login as Mainsail and Fluidd. If Moonraker asks for a login, the screen asks for it too.
@@ -44,15 +45,15 @@ Open `http://<printer-ip>/screen/` in a browser. The dot in the top-right corner
 
 If the printer's screen has gone dark to save power, the page shows black. Tap anywhere to wake it, just as you would on the printer.
 
-### Show it in Mainsail or Fluidd (optional)
+### In the Mainsail and Fluidd dashboard
 
-```sh
-~/FLSUN_RemoteScreen/install.sh --webcam
-```
+The installer also adds a second webcam named **Screen**, so the printer's screen appears next to the camera in the dashboard's webcam panel:
 
-This adds a webcam named **Screen** that shows the printer's screen in the dashboard's webcam panel. It's view only: the Mainsail version on the T1 Pro (2.12) can't embed pages, so use `/screen/` to touch.
+![The camera and the printer's screen side by side in Mainsail's webcam panel](docs/mainsail-webcam.png)
 
-Before using this with FLSUN_Timelapse, add `camera: Webcam` under `[timelapse]` in `~/printer_data/config/flsun_timelapse.conf`. Without that line, the timelapse records the first webcam Moonraker lists, and that could be the screen. HelixScreen's camera view can pick the wrong one the same way. To remove the entry, delete the Screen webcam in Mainsail's or Fluidd's webcam settings.
+The Screen webcam is view only: the Mainsail version on the T1 Pro (2.12) can't embed pages, so use `/screen/` to touch.
+
+The installer always lists Screen after your camera, so FLSUN_Timelapse keeps recording the camera and HelixScreen's camera view keeps showing it. Both use the first webcam Moonraker lists. To leave the Screen webcam out, install with `~/FLSUN_RemoteScreen/install.sh --no-webcam`, or delete it later in Mainsail's or Fluidd's webcam settings.
 
 ## Settings
 
@@ -79,6 +80,7 @@ If you recalibrate HelixScreen's touch, the remote screen picks up the new calib
 | `~/printer_data/config/flsun_remote_screen.env` | New file: options |
 | `~/printer_data/config/moonraker.conf` | Adds `[include flsun_remote_screen.conf]` (a backup is saved first) |
 | `~/printer_data/moonraker.asvc` | Adds `flsun-remote-screen`, so the update manager can restart it |
+| Moonraker webcams | Adds the **Screen** webcam (`/screen/snapshot`), listed after your camera; skipped with `--no-webcam` |
 | System clock | Sets it now, and adds `flsun-timesync.service` (`/usr/local/bin/flsun-timesync`), which sets it at every boot, saves it to `/etc/lasttime` and restarts ntpd. FLSun's `/etc/monitor` restores the date from that file at each boot but, because of a bug, never updates it, so without this fix the clock returns to the same old date after every boot |
 | `/etc/ssl/certs` | Rebuilds the missing certificate links (`update-ca-certificates`) |
 | git | Reinstalls Debian's git package (2.20.1-2+deb10u9) to restore the https support FLSun deleted |
