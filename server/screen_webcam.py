@@ -6,6 +6,8 @@
 #
 # FLSUN_Timelapse records the first webcam Moonraker lists, and HelixScreen
 # shows the first MJPEG one, so Screen must never come before the camera.
+# Screen is an iframe of the /screen/ page, so it can be touched from the
+# dashboard; snapshot_url still gives a plain image.
 # This Moonraker lists webcams from its database sorted by their random uid,
 # so Screen is re-created until its uid sorts after every other webcam's.
 #
@@ -22,10 +24,10 @@ import urllib.request
 MOONRAKER = "http://127.0.0.1:7125"
 NAME = "Screen"
 SETTINGS = {
-    "service": "mjpegstreamer-adaptive",
-    "stream_url": "/screen/stream",
+    "service": "iframe",
+    "stream_url": "/screen/",
     "snapshot_url": "/screen/snapshot",
-    "aspect_ratio": "16:9",
+    "aspect_ratio": "480:272",
     "target_fps": "10",
     "target_fps_idle": "2",
 }

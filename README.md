@@ -7,7 +7,7 @@ Open `http://<printer-ip>/screen/` to see the printer's screen live. Click or ta
 ## What it does
 
 - Mirrors the 480×272 screen and refreshes as soon as anything on it changes.
-- Shows the screen as a second webcam in the Mainsail and Fluidd dashboard.
+- Shows the screen, touchable, as a second webcam in the Mainsail and Fluidd dashboard.
 - Turns clicks, taps and drags into real touches on the printer's screen.
 - Works with HelixScreen and with FLSun's stock screen. Each one calibrates the touch panel differently, so the plugin follows whichever screen is running.
 - Uses the same login as Mainsail and Fluidd. If Moonraker asks for a login, the screen asks for it too.
@@ -53,7 +53,7 @@ The installer also adds a second webcam named **Screen**, so the printer's scree
 
 ![The camera and the printer's screen side by side in Mainsail's webcam panel](docs/mainsail-webcam.png)
 
-The Screen webcam is view only: the Mainsail version on the T1 Pro (2.12) can't embed pages, so use `/screen/` to touch.
+The Screen webcam embeds the `/screen/` page, so you can tap and swipe it right in the dashboard. This needs a Mainsail or Fluidd that can show a web page as a webcam (the "iframe" type), such as the current releases. FLSun's stock Mainsail 2.12 can't, so with it, open `/screen/` to touch. If you installed an earlier version, run `~/FLSUN_RemoteScreen/install.sh` again to switch the webcam over.
 
 The installer always lists Screen after your camera, so FLSUN_Timelapse keeps recording the camera and HelixScreen's camera view keeps showing it. Both use the first webcam Moonraker lists. To leave the Screen webcam out, install with `~/FLSUN_RemoteScreen/install.sh --no-webcam`, or delete it later in Mainsail's or Fluidd's webcam settings.
 
