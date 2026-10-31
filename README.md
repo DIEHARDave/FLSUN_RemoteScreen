@@ -1,5 +1,7 @@
 # FLSUN_RemoteScreen
 
+> **Parts:** the printers, boards, readers and other gear that go with this project are listed at [projects.die-hard.net/gear](https://projects.die-hard.net/gear) (Amazon affiliate links).
+
 View and control the **FLSun T1 Pro** touchscreen from any web browser on a phone, tablet or computer. This is the same kind of remote screen that the Snapmaker U1 Extended Firmware offers.
 
 Open `http://<printer-ip>/screen/` to see the printer's screen live. Click or tap to press its buttons, and drag to swipe or scroll.
